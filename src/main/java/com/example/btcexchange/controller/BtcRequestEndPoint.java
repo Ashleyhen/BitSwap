@@ -2,8 +2,6 @@ package com.example.btcexchange.controller;
 
 import com.example.btcexchange.service.WalletService;
 import io.swagger.annotations.Api;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,7 +11,8 @@ public record BtcRequestEndPoint(WalletService walletService) {
 
     @GetMapping("home")
     public String getTemp() {
-        return walletService.payToWallet().getScriptPubKey().toString();
+
+        return walletService.payToWallet();
 
     }
 }
