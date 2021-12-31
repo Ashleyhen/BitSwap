@@ -5,13 +5,15 @@ import org.bitcoinj.core.Context;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.function.Supplier;
+
 @Service
-public class NetworkContext {
+public class ContextState {
 
     final Context context;
 
     @Autowired
-    public NetworkContext(IBitcoinNetParam iBitcoinNetParam) {
+    public ContextState(IBitcoinNetParam iBitcoinNetParam) {
         context = new Context(iBitcoinNetParam.btcNetParams());
         Context.propagate(context);
     }
@@ -19,4 +21,10 @@ public class NetworkContext {
     public Context getContext() {
         return context;
     }
+
+    public <T> T propagateContext(Supplier<T> prop) {
+        Context.propagate(context);
+        return prop.get();
+    }
+
 }
