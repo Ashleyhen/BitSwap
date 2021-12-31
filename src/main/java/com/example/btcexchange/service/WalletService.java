@@ -39,7 +39,6 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
         TransactionOutput transactionOutput = contract.addOutput(amount, script);
         Wallet wallet = Wallet.createDeterministic(netWorkContextState.getContext(), Script.ScriptType.P2WPKH);
 
-
         SendRequest req = netWorkContextState.propagateContext(() -> SendRequest.forTx(contract));
 
         log.info(String.valueOf(wallet.getKeyChainSeed()));
