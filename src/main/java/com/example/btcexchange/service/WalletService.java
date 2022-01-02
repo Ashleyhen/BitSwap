@@ -16,7 +16,6 @@ import org.bitcoinj.wallet.SendRequest;
 import org.bitcoinj.wallet.Wallet;
 import org.springframework.stereotype.Service;
 
-import javax.management.openmbean.KeyAlreadyExistsException;
 import java.io.*;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -66,11 +65,14 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
             }
 
             Optional<String> duplicateKeyCheck = walletDtoArrayList.stream().map(WalletDto::name).filter(name -> name.equals(nameId)).findAny();
-            duplicateKeyCheck.ifPresent(t -> {
-                throw new KeyAlreadyExistsException("please choose a name that doesn't exist in the list " + nameId);
-            });
 
-            WalletDto walletDto = new WalletDto(nameId, pubKey.getPublicKeyAsHex(), deterministicSeed.getMnemonicString());
+            String id = "";
+            if (duplicateKeyCheck.isEmpty()) {
+                id = nameId + "_" + walletDtoArrayList.size();
+            } else {
+                id = nameId;
+            }
+            WalletDto walletDto = new WalletDto(id, pubKey.getPublicKeyAsHex(), deterministicSeed.getMnemonicString());
             FileOutputStream fileOutput = new FileOutputStream(file);
             ObjectOutputStream outputStream = new ObjectOutputStream(fileOutput);
             walletDtoArrayList.add(walletDto);
