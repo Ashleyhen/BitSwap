@@ -16,9 +16,13 @@ import java.util.List;
 @Api("/")
 public record BtcRequestEndPoint(WalletService walletService) {
 
-    @GetMapping("home")
-    public Mono<String> getWallet() {
-        return Mono.just(walletService.payToWallet());
+    @GetMapping("transfer-to")
+    public Mono<String> transferTo(
+            @RequestParam("from-wallet") String fromWalletId,
+            @RequestParam("to-wallet") String toWalletId,
+            @RequestParam("amount") Double amount
+    ) {
+        return Mono.just(walletService.transferTo(fromWalletId, toWalletId, amount));
     }
 
     @PutMapping("new-wallet")

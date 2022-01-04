@@ -26,16 +26,17 @@ import java.util.Optional;
 @Service
 public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netWorkContextState) {
 
+    private static final String walletFile = "temp.wallet";
 
-    public String payToWallet() {
+    public String transferTo(String fromWallet, String toWallet, Double amount) {
         ECKey clientKey = new ECKey();
         ECKey serverKey = new ECKey();
 
         Transaction contract = new Transaction(iBitcoinNetParam.btcNetParams());
         List<ECKey> keys = ImmutableList.of(clientKey, serverKey);
         Script script = ScriptBuilder.createMultiSigOutputScript(2, keys);
-        Coin amount = Coin.valueOf(0, 50);
-        TransactionOutput transactionOutput = contract.addOutput(amount, script);
+        Coin coinAmount = Coin.valueOf(0, 50);
+        TransactionOutput transactionOutput = contract.addOutput(coinAmount, script);
         Wallet wallet = Wallet.createDeterministic(netWorkContextState.getContext(), Script.ScriptType.P2WPKH);
 
         SendRequest req = netWorkContextState.propagateContext(() -> SendRequest.forTx(contract));
@@ -51,18 +52,9 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
 
     public Try<List<WalletDto>> createWallet(String nameId, String passphrase) {
 
-        DeterministicSeed deterministicSeed = new DeterministicSeed(new SecureRandom(), 128, passphrase);
-        Wallet wallet = netWorkContextState.propagateContext(() ->
-                Wallet.fromSeed(iBitcoinNetParam.btcNetParams(), deterministicSeed, Script.ScriptType.P2WPKH));
-        DeterministicKey pubKey = wallet.freshKey(KeyChain.KeyPurpose.RECEIVE_FUNDS);
         Try<List<WalletDto>> walletDtoTry = Try.of(() -> {
-            File file = new File("temp.wallet");
-            ArrayList<WalletDto> walletDtoArrayList = new ArrayList<>();
-            if (file.exists()) {
-                FileInputStream fi = new FileInputStream(file);
-                ObjectInputStream oi = new ObjectInputStream(fi);
-                walletDtoArrayList = (ArrayList<WalletDto>) oi.readObject();
-            }
+            File file = new File(walletFile);
+            ArrayList<WalletDto> walletDtoArrayList = extractWallet(file);
 
             Optional<String> duplicateKeyCheck = walletDtoArrayList.stream().map(WalletDto::name).filter(name -> name.equals(nameId)).findAny();
 
@@ -72,16 +64,36 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
             } else {
                 id = nameId;
             }
-            WalletDto walletDto = new WalletDto(id, pubKey.getPublicKeyAsHex(), deterministicSeed.getMnemonicString());
-            FileOutputStream fileOutput = new FileOutputStream(file);
-            ObjectOutputStream outputStream = new ObjectOutputStream(fileOutput);
-            walletDtoArrayList.add(walletDto);
-            outputStream.writeObject(walletDtoArrayList);
-            fileOutput.close();
-            outputStream.close();
+            createAWallet(passphrase, file, walletDtoArrayList, id);
             return walletDtoArrayList;
         });
         return walletDtoTry;
+    }
+
+    private void createAWallet(String passphrase, File file, ArrayList<WalletDto> walletDtoArrayList, String id) throws IOException {
+        DeterministicSeed deterministicSeed = new DeterministicSeed(new SecureRandom(), 128, passphrase);
+        Wallet wallet = netWorkContextState.propagateContext(() ->
+                Wallet.fromSeed(iBitcoinNetParam.btcNetParams(), deterministicSeed, Script.ScriptType.P2WPKH));
+        DeterministicKey pubKey = wallet.freshKey(KeyChain.KeyPurpose.RECEIVE_FUNDS);
+        WalletDto walletDto = new WalletDto(id, pubKey.getPublicKeyAsHex(), deterministicSeed.getMnemonicString());
+        FileOutputStream fileOutput = new FileOutputStream(file);
+        ObjectOutputStream outputStream = new ObjectOutputStream(fileOutput);
+        walletDtoArrayList.add(walletDto);
+        outputStream.writeObject(walletDtoArrayList);
+        fileOutput.close();
+        outputStream.close();
+    }
+
+    private ArrayList<WalletDto> extractWallet(File file) throws IOException, ClassNotFoundException {
+        ArrayList<WalletDto> walletDtoArrayList = new ArrayList<>();
+        if (file.exists()) {
+            FileInputStream fi = new FileInputStream(file);
+            ObjectInputStream oi = new ObjectInputStream(fi);
+            walletDtoArrayList = (ArrayList<WalletDto>) oi.readObject();
+            fi.close();
+            oi.close();
+        }
+        return walletDtoArrayList;
     }
 
 }
