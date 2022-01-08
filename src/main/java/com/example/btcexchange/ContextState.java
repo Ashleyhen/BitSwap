@@ -18,10 +18,6 @@ public class ContextState {
         Context.propagate(context);
     }
 
-    public Context getContext() {
-        return context;
-    }
-
     public <T> T propagateContext(Supplier<T> prop) {
         Context.propagate(context);
         return prop.get();
