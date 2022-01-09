@@ -7,7 +7,10 @@ import com.example.btcexchange.utils.IBitcoinNetParam;
 import io.vavr.CheckedFunction0;
 import io.vavr.control.Try;
 import lombok.extern.slf4j.Slf4j;
+import org.bitcoinj.core.Coin;
+import org.bitcoinj.core.InsufficientMoneyException;
 import org.bitcoinj.core.Transaction;
+import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.crypto.MnemonicCode;
 import org.bitcoinj.crypto.MnemonicException;
@@ -15,6 +18,7 @@ import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.wallet.DeterministicSeed;
 import org.bitcoinj.wallet.KeyChain;
+import org.bitcoinj.wallet.SendRequest;
 import org.bitcoinj.wallet.Wallet;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
@@ -51,10 +55,17 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
         return Try.of(transferFunds);
     }
 
-    private String payTo(Wallet from, String passphrase) {
+    private String payTo(Wallet wallet, String passphrase) throws InsufficientMoneyException {
         Transaction contract = new Transaction(iBitcoinNetParam.btcNetParams());
-        from.getImportedKeys().stream().findAny().map(ScriptBuilder::createP2PKOutputScript);
-//        Script script = ScriptBuilder.createP2PKOutputScript();
+
+        Script script = ScriptBuilder.createP2WPKHOutputScript(passphrase.getBytes());
+        Coin coinAmount = Coin.valueOf(0, 50);
+        TransactionOutput transactionOutput = contract.addOutput(coinAmount, script);
+        SendRequest req = netWorkContextState.propagateContext(() -> SendRequest.forTx(contract));
+        log.info(String.valueOf(wallet.getKeyChainSeed()));
+        wallet.completeTx(req);
+
+
         return "Success";
     }
 
