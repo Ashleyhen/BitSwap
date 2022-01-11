@@ -7,10 +7,7 @@ import com.example.btcexchange.utils.IBitcoinNetParam;
 import io.vavr.CheckedFunction0;
 import io.vavr.control.Try;
 import lombok.extern.slf4j.Slf4j;
-import org.bitcoinj.core.Coin;
-import org.bitcoinj.core.InsufficientMoneyException;
-import org.bitcoinj.core.Transaction;
-import org.bitcoinj.core.TransactionOutput;
+import org.bitcoinj.core.*;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.crypto.MnemonicCode;
 import org.bitcoinj.crypto.MnemonicException;
@@ -31,6 +28,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.bitcoinj.core.Coin.MICROCOIN;
 
 @Slf4j
 @Service
@@ -57,9 +56,8 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
 
     private String payTo(Wallet wallet, String passphrase) throws InsufficientMoneyException {
         Transaction contract = new Transaction(iBitcoinNetParam.btcNetParams());
-
-        Script script = ScriptBuilder.createP2WPKHOutputScript(passphrase.getBytes());
-        Coin coinAmount = Coin.valueOf(0, 50);
+        Script script = ScriptBuilder.createP2WPKHOutputScript(DeterministicKey.fromPublicOnly(Utils.HEX.decode(passphrase)));
+        Coin coinAmount = Coin.ofBtc(MICROCOIN.toBtc());
         TransactionOutput transactionOutput = contract.addOutput(coinAmount, script);
         SendRequest req = netWorkContextState.propagateContext(() -> SendRequest.forTx(contract));
         log.info(String.valueOf(wallet.getKeyChainSeed()));
