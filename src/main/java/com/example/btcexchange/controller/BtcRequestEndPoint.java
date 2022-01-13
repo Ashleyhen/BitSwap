@@ -3,23 +3,32 @@ package com.example.btcexchange.controller;
 import com.example.btcexchange.DTO.TransferToDto;
 import com.example.btcexchange.DTO.WalletDto;
 import com.example.btcexchange.service.WalletService;
-import io.swagger.annotations.Api;
+//import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.servers.Server;
+import io.swagger.v3.oas.annotations.servers.Servers;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.vavr.control.Try;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springdoc.core.annotations.RouterOperation;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.function.Supplier;
 
+//
 @RestController
-@Api("/")
 public record BtcRequestEndPoint(WalletService walletService) {
+    final static String swaggertag = "exchange";
 
     @GetMapping("transfer-to")
+    @Tag(name = swaggertag)
     public Mono<String> transferTo(
             @RequestParam("from-wallet") @NotNull String fromWalletId,
             @RequestParam("to-wallet") @NotNull String toWalletId,
@@ -28,13 +37,19 @@ public record BtcRequestEndPoint(WalletService walletService) {
         return walletService.transferTo(new TransferToDto(fromWalletId, toWalletId, amount)).fold(Mono::error, Mono::just);
     }
 
-    @GetMapping("get-all-wallets")
-    public Flux<WalletDto> getAllWallets() {
-        return walletService.getWallets().fold(Flux::error, Flux::fromIterable);
-    }
+    @Bean
+    @RouterOperation(
+            operation = @Operation(description = "says hello", operationId = "getAllWallets", tags = swaggertag,
+                    responses = @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = WalletDto.class))))
 
+    )
+    public Supplier<Flux<WalletDto>> getAllWallets() {
+        return () -> walletService.getWallets().fold(Flux::error, Flux::fromIterable);
+    }
+//
 
     @PutMapping("new-wallet")
+    @Tag(name = swaggertag)
     public Mono<List<WalletDto>> newWallet(
             @RequestParam("wallet-nameId") @NotNull String name,
             @RequestParam("passphrase") @NotNull String passphrase) {
