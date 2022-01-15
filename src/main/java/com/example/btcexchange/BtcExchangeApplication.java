@@ -36,19 +36,5 @@ public class BtcExchangeApplication {
     }
 
 
-//    @Bean
-//    @RouterOperation(
-//            operation = @Operation(description = "says hello", operationId = "hello", tags = "person",
-//                    responses = @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = String.class))))
-//
-//    )
-//    public Supplier<String> helloWorld() {
-//        return () -> "hello";
-//    }
-
-    @Bean
-    public Supplier<Flux<String>> words() {
-        return () -> Flux.fromArray(new String[]{"foo", "bar"});
-    }
 //    http://localhost:8080/swagger-ui/index.html
 }
