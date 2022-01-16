@@ -17,7 +17,6 @@ import org.bitcoinj.wallet.DeterministicSeed;
 import org.bitcoinj.wallet.KeyChain;
 import org.bitcoinj.wallet.SendRequest;
 import org.bitcoinj.wallet.Wallet;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -48,7 +47,7 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
         CheckedFunction0<Wallet> tryExtractingToWallet = () -> extractWalletFromId(transferToDto.toWallet());
 
         CheckedFunction0<String> transferFunds = tryExtractingToWallet.andThen(toWallet ->
-                payTo(toWallet, extractCredentialsMap().get(transferToDto.fromWallet()).publicKey()));
+                payTo(toWallet, extractCredentialsMap().get(transferToDto.fromWallet()).getPublicKey()));
 
 
         return Try.of(transferFunds);
@@ -71,12 +70,12 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
     private Wallet extractWalletFromId(String walletId) throws
             IOException, ClassNotFoundException, MnemonicException.MnemonicWordException, MnemonicException.MnemonicChecksumException, MnemonicException.MnemonicLengthException {
 
-        Map<String, WalletDto> walletMap = extractCredentials().stream().collect(Collectors.toMap(WalletDto::nameId, Function.identity()));
+        Map<String, WalletDto> walletMap = extractCredentials().stream().collect(Collectors.toMap(WalletDto::getNameId, Function.identity()));
 
         WalletDto toWalletDto = walletMap.get(walletId);
 
-        byte[] entropy = MnemonicCode.INSTANCE.toEntropy(toWalletDto.privateKey());
-        DeterministicSeed deterministicSeed = new DeterministicSeed(entropy, toWalletDto.passphrase(), toWalletDto.creationTime());
+        byte[] entropy = MnemonicCode.INSTANCE.toEntropy(toWalletDto.getPrivateKey());
+        DeterministicSeed deterministicSeed = new DeterministicSeed(entropy, toWalletDto.getPrivateKey(), toWalletDto.getCreationTime());
 
         return netWorkContextState.propagateContext(() ->
                 Wallet.fromSeed(iBitcoinNetParam.btcNetParams(), deterministicSeed, Script.ScriptType.P2WPKH)
@@ -84,11 +83,10 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
 
     }
 
-    @NotNull
     private ArrayList<WalletDto> addWallet(String nameId, String passphrase) throws IOException, ClassNotFoundException {
         ArrayList<WalletDto> walletDtoArrayList = extractCredentials();
 
-        Optional<String> duplicateKeyCheck = walletDtoArrayList.stream().map(WalletDto::nameId).filter(name -> name.equals(nameId)).findAny();
+        Optional<String> duplicateKeyCheck = walletDtoArrayList.stream().map(WalletDto::getNameId).filter(name -> name.equals(nameId)).findAny();
 
         String id = "";
         if (!duplicateKeyCheck.isEmpty()) {
@@ -105,7 +103,6 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
         Wallet wallet = netWorkContextState.propagateContext(() ->
                 Wallet.fromSeed(iBitcoinNetParam.btcNetParams(), deterministicSeed, Script.ScriptType.P2WPKH));
         DeterministicKey pubKey = wallet.freshKey(KeyChain.KeyPurpose.RECEIVE_FUNDS);
-
         WalletDto walletDto = new WalletDto(id, pubKey.getPublicKeyAsHex(), deterministicSeed.getMnemonicCode(), passphrase, deterministicSeed.getCreationTimeSeconds());
         FileOutputStream fileOutput = new FileOutputStream(file);
         ObjectOutputStream outputStream = new ObjectOutputStream(fileOutput);
@@ -129,7 +126,7 @@ public record WalletService(IBitcoinNetParam iBitcoinNetParam, ContextState netW
     }
 
     private Map<String, WalletDto> extractCredentialsMap() throws IOException, ClassNotFoundException {
-        return extractCredentials().stream().collect(Collectors.toMap(WalletDto::nameId, Function.identity()));
+        return extractCredentials().stream().collect(Collectors.toMap(WalletDto::getNameId, Function.identity()));
     }
 
 }
