@@ -16,4 +16,5 @@ public class WalletDto implements Serializable {
     private List<String> privateKey;
     private String passphrase;
     private long creationTime;
+
 }
