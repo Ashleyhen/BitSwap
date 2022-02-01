@@ -29,5 +29,6 @@ public class BtcExchangeApplication {
                         .license(new License().name("Apache 2.0").url("http://springdoc.org")));
     }
 
+//    https://github.com/bitcoinj/bitcoinj/tree/master/examples/src/main/java/org/bitcoinj/examples
 //    http://localhost:8080/swagger-ui/index.html
 }

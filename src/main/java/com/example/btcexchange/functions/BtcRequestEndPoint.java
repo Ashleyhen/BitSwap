@@ -2,13 +2,14 @@ package com.example.btcexchange.functions;
 
 import com.example.btcexchange.DTO.TransferToDto;
 import com.example.btcexchange.DTO.WalletDto;
-import com.example.btcexchange.service.WalletService;
+import com.example.btcexchange.service.WalletKitService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.vavr.control.Try;
+import org.bitcoinj.core.SegwitAddress;
 import org.springdoc.core.annotations.RouterOperation;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +21,7 @@ import reactor.core.publisher.Mono;
 import java.util.function.Supplier;
 
 @RestController
-public record BtcRequestEndPoint(WalletService walletService) {
+public record BtcRequestEndPoint(WalletKitService walletService) {
     final static String swaggerTag = "exchange";
 
 
@@ -51,12 +52,12 @@ public record BtcRequestEndPoint(WalletService walletService) {
 
     @GetMapping("transfer-to")
     @Tag(name = swaggerTag)
-    public Mono<String> transferTo(
+    public Mono<SegwitAddress> transferTo(
             @RequestParam("from-wallet") String fromWalletId,
             @RequestParam("to-wallet") String toWalletId,
             @RequestParam("amount") Double amount
     ) {
-        return walletService.transferTo(new TransferToDto(fromWalletId, toWalletId, amount)).fold(Mono::error, Mono::just);
+        return walletService.sendTransaction(new TransferToDto(fromWalletId, toWalletId, amount)).fold(Mono::error, Mono::just);
     }
 
 

@@ -1,25 +1,20 @@
 package com.example.btcexchange.service;
 
 import com.example.btcexchange.ContextStates;
-import com.example.btcexchange.DTO.TransferToDto;
 import com.example.btcexchange.DTO.WalletDto;
 import com.example.btcexchange.utils.IBitcoinNetParam;
-import io.vavr.CheckedFunction0;
 import io.vavr.control.Try;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bitcoinj.core.*;
-import org.bitcoinj.crypto.MnemonicCode;
 import org.bitcoinj.crypto.MnemonicException;
 import org.bitcoinj.script.Script;
-import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.wallet.DeterministicSeed;
-import org.bitcoinj.wallet.SendRequest;
+import org.bitcoinj.wallet.UnreadableWalletException;
 import org.bitcoinj.wallet.Wallet;
+import org.jsoup.internal.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.*;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -28,34 +23,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.bitcoinj.core.Coin.MILLICOIN;
 
 @Slf4j
 @Component
-@AllArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class WalletService {
     private final static File file = new File("storage/temp.wallet");
     private final IBitcoinNetParam iBitcoinNetParam;
     private final ContextStates netWorkContextStates;
-    private final PeerDiscoveryService peerDiscoveryService;
-
-    @PostConstruct
-    private void postConstruct() {
-
-        CheckedFunction0<Stream<Wallet>> extractWalletDtoStream = () ->
-                this._extractCredentials().stream().map(walletDto -> CheckedFunction0.of(() -> convertDtoToWallet(walletDto)).unchecked().apply());
-
-        Try<BlockChain> blockChainTry = Try.withResources(extractWalletDtoStream)
-                .of(walletStream -> peerDiscoveryService.findPeer(walletStream.collect(Collectors.toList())).apply());
-
-
-        blockChainTry.get();
-
-
-    }
-
 
     public Try<List<WalletDto>> getWallets() {
         return Try.of(this::_extractCredentials);
@@ -65,44 +40,9 @@ public class WalletService {
         return Try.of(() -> _createWallet(nameId, passphrase));
     }
 
-    public Try<String> transferTo(TransferToDto transferToDto) {
 
-        CheckedFunction0<Wallet> tryExtractingToWallet = () -> _extractWalletFromId(transferToDto.fromWallet());
-//        CheckedFunction0<BlockChain> connectToBlockChain = tryExtractingToWallet
-//                .andThen(wallet -> peerDiscoveryService.findPeer(wallet).apply());
-
-
-//        Try.of(connectToBlockChain).get();
-
-        CheckedFunction0<String> transferFunds = tryExtractingToWallet.andThen(fromWallet ->
-                _payTo(fromWallet, _extractCredentialsMap().get(transferToDto.toWallet()).getPublicKey()));
-
-        return Try.of(transferFunds);
-    }
-
-    private String _payTo(Wallet wallet, String passphrase) throws InsufficientMoneyException {
-        Transaction contract = new Transaction(iBitcoinNetParam.btcNetParams());
-        Address address = Address.fromString(iBitcoinNetParam.btcNetParams(), passphrase);
-
-        Script script = ScriptBuilder.createP2WPKHOutputScript(address.getHash());
-        Coin coinAmount = Coin.ofBtc(MILLICOIN.toBtc());
-        TransactionOutput transactionOutput = contract.addOutput(coinAmount, script);
-        SendRequest req = netWorkContextStates.propagateContext(() -> SendRequest.forTx(contract));
-        log.info(String.valueOf(wallet.getKeyChainSeed()));
-
-        if (wallet.getBalance().isLessThan(coinAmount)) {
-            throw new InsufficientMoneyException(coinAmount, "Insufficient funds " + wallet.getBalance().subtract(coinAmount));
-        } else {
-            wallet.completeTx(req);
-        }
-
-
-        return "Success";
-    }
-
-
-    private Wallet _extractWalletFromId(String walletId) throws
-            IOException, ClassNotFoundException, MnemonicException.MnemonicWordException, MnemonicException.MnemonicChecksumException, MnemonicException.MnemonicLengthException {
+    public Wallet _extractWalletFromId(String walletId) throws
+            IOException, ClassNotFoundException, MnemonicException.MnemonicWordException, MnemonicException.MnemonicChecksumException, MnemonicException.MnemonicLengthException, UnreadableWalletException {
 
         Map<String, WalletDto> walletMap = _extractCredentials().stream().collect(Collectors.toMap(WalletDto::getNameId, Function.identity()));
 
@@ -112,9 +52,9 @@ public class WalletService {
 
     }
 
-    private Wallet convertDtoToWallet(WalletDto toWalletDto) throws MnemonicException.MnemonicLengthException, MnemonicException.MnemonicWordException, MnemonicException.MnemonicChecksumException {
-        byte[] entropy = MnemonicCode.INSTANCE.toEntropy(toWalletDto.getPrivateKey());
-        DeterministicSeed deterministicSeed = new DeterministicSeed(entropy, toWalletDto.getPrivateKey(), toWalletDto.getCreationTime());
+    protected Wallet convertDtoToWallet(WalletDto toWalletDto) throws MnemonicException.MnemonicLengthException, MnemonicException.MnemonicWordException, MnemonicException.MnemonicChecksumException, UnreadableWalletException {
+//        byte[] entropy = MnemonicCode.INSTANCE.toEntropy(toWalletDto.getPrivateKey());
+        DeterministicSeed deterministicSeed = new DeterministicSeed(StringUtil.join(toWalletDto.getPrivateKey(), " "), null, "", 1409478661L);
         return netWorkContextStates.propagateContext(() ->
                 Wallet.fromSeed(iBitcoinNetParam.btcNetParams(), deterministicSeed, Script.ScriptType.P2WPKH)
         );
@@ -149,7 +89,7 @@ public class WalletService {
         return walletDto;
     }
 
-    private ArrayList<WalletDto> _extractCredentials() throws IOException, ClassNotFoundException {
+    protected ArrayList<WalletDto> _extractCredentials() throws IOException, ClassNotFoundException {
         ArrayList<WalletDto> walletDtoArrayList = new ArrayList<>();
         if (file.exists()) {
             FileInputStream fi = new FileInputStream(file);
@@ -161,7 +101,7 @@ public class WalletService {
         return walletDtoArrayList;
     }
 
-    private Map<String, WalletDto> _extractCredentialsMap() throws IOException, ClassNotFoundException {
+    Map<String, WalletDto> extractCredentialsMap() throws IOException, ClassNotFoundException {
         return _extractCredentials().stream().collect(Collectors.toMap(WalletDto::getNameId, Function.identity()));
     }
 
