@@ -48,6 +48,18 @@ public class PeerDiscoveryService {
         return storageSetUp(iBitcoinNetParam.btcNetParams())
                 .andThen(spvBlockStore -> {
                     BlockChain blockChain = new BlockChain(contextStates.getContext(), wallet, spvBlockStore);
+                    wallet.stream().forEach(w -> {
+                        log.info(w.getDescription());
+                        w.addCoinsReceivedEventListener((executor) -> {
+                            executor.run();
+                        }, (wallet1, transaction, previous, next) -> {
+                            log.info(wallet1.getDescription());
+                            log.info(transaction.getMemo());
+                            log.info(previous.toFriendlyString());
+                            log.info(next.toFriendlyString());
+                        });
+
+                    });
                     return configPeerGroup(blockChain, wallet);
 
                 });

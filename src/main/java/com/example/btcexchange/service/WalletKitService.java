@@ -10,6 +10,8 @@ import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.SegwitAddress;
 import org.bitcoinj.kits.WalletAppKit;
+import org.bitcoinj.wallet.DeterministicSeed;
+import org.jsoup.internal.StringUtil;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -34,8 +36,8 @@ public class WalletKitService extends WalletService {
         kit.awaitRunning();
         Coin value = Coin.MILLICOIN;
         CheckedFunction0<WalletDto> checkWallet = () -> extractCredentialsMap().get(transferToDto.fromWallet());
-        Try<SegwitAddress> segwitAddressTry = Try.of(checkWallet.andThen(walletDto -> SegwitAddress.fromBech32(iBitcoinNetParam.btcNetParams(), walletDto.getPublicKey())));
-        return segwitAddressTry;
+        CheckedFunction0<DeterministicSeed> seedCheckedFunction0 = checkWallet.andThen(t -> new DeterministicSeed(StringUtil.join(t.getPrivateKey(), " "), null, "", 1409478661L));
+        return null;
 
 
     }

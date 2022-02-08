@@ -40,7 +40,7 @@ public class TransferService extends WalletService {
         this.peerDiscoveryService = peerDiscoveryService;
     }
 
-//    @PostConstruct
+    @PostConstruct
     private void postConstruct() {
 
         CheckedFunction0<Stream<Wallet>> extractWalletDtoStream = () ->
@@ -66,14 +66,15 @@ public class TransferService extends WalletService {
         return Try.of(transferFunds);
     }
 
-    private String _payTo(Wallet wallet, String passphrase) throws InsufficientMoneyException {
+    private String _payTo(Wallet wallet, String passphrase) {
         Transaction contract = new Transaction(iBitcoinNetParam.btcNetParams());
         Address address = Address.fromString(iBitcoinNetParam.btcNetParams(), passphrase);
 
         Script script = ScriptBuilder.createP2WPKHOutputScript(address.getHash());
         Coin coinAmount = Coin.ofBtc(MILLICOIN.toBtc());
         try {
-
+            String str = wallet.getBalance(Wallet.BalanceType.ESTIMATED).toFriendlyString();
+            log.info(str);
             wallet.sendCoins(peerGroup, SendRequest.to(address, coinAmount));
         } catch (InsufficientMoneyException insufficientMoneyException) {
 
