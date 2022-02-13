@@ -1,23 +1,22 @@
 package com.example.btcexchange.service;
 
 import com.example.btcexchange.ContextStates;
-import com.example.btcexchange.utils.IBitcoinNetParam;
+import com.example.btcexchange.DTO.WalletDto;
+import com.example.btcexchange.interfaces.IBitcoinNetParam;
 import io.vavr.CheckedFunction0;
+import io.vavr.control.Try;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bitcoinj.core.BlockChain;
-import org.bitcoinj.core.PeerAddress;
-import org.bitcoinj.core.PeerGroup;
-import org.bitcoinj.core.VersionMessage;
+import org.bitcoinj.core.*;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
+import org.bitcoinj.core.listeners.TransactionReceivedInBlockListener;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.net.discovery.MultiplexingDiscovery;
-import org.bitcoinj.params.AbstractBitcoinNetParams;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.Wallet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -25,27 +24,21 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class PeerDiscoveryService {
-    private final static File storageFile = new File("storage/blockchain.binary");
+    private static final String fileName = "temp";
     private final IBitcoinNetParam iBitcoinNetParam;
     private final ContextStates contextStates;
 
-    @Autowired
-    PeerDiscoveryService(IBitcoinNetParam iBitcoinNetParam, ContextStates contextStates) {
-        this.iBitcoinNetParam = iBitcoinNetParam;
-        this.contextStates = contextStates;
-        storageFile.deleteOnExit();
 
-    }
-
-    private static CheckedFunction0<SPVBlockStore> storageSetUp(AbstractBitcoinNetParams bitcoinNetParams) {
-        CheckedFunction0<SPVBlockStore> spvBlockStoreCheckedFunction0 = () -> new SPVBlockStore(bitcoinNetParams, storageFile);
+    private static CheckedFunction0<SPVBlockStore> storageSetUp(IBitcoinNetParam bitcoinNetParams) {
+        CheckedFunction0<SPVBlockStore> spvBlockStoreCheckedFunction0 = () -> new SPVBlockStore(bitcoinNetParams.btcNetParams(), bitcoinNetParams.getBlockChainFile());
         return spvBlockStoreCheckedFunction0.memoized();
     }
 
     public CheckedFunction0<PeerGroup> findPeer(List<Wallet> wallet) {
 
-        return storageSetUp(iBitcoinNetParam.btcNetParams())
+        return storageSetUp(iBitcoinNetParam)
                 .andThen(spvBlockStore -> {
                     BlockChain blockChain = new BlockChain(contextStates.getContext(), wallet, spvBlockStore);
                     wallet.stream().forEach(w -> {
@@ -89,5 +82,37 @@ public class PeerDiscoveryService {
         return peerGroup;
     }
 
+    public Try<WalletDto> addTrackAddress(String nameId, Wallet wallet) {
+
+        Try<WalletDto> result = contextStates.propagateContext(context -> Try.of(() -> {
+//             Blockstore is responsible for saving this data
+
+            SPVBlockStore spvBlockStore = new SPVBlockStore(context, iBitcoinNetParam.getBlockChainFile());
+//            blockchain is responsible for parsing and validating blocks
+            BlockChain blockChain = new BlockChain(contextStates.getContext(), wallet, spvBlockStore);
+//            PeerGroup object responsible for actually getting this information from the bitcoin network
+            PeerGroup peerGroup = new PeerGroup(context, blockChain);
+            MultiplexingDiscovery multiplexingDiscovery = DnsDiscovery.forServices(context, VersionMessage.NODE_BLOOM);
+            peerGroup.addWallet(wallet);
+            blockChain.addWallet(wallet);
+            peerGroup.addPeerDiscovery(multiplexingDiscovery);
+            wallet.addCoinsReceivedEventListener(
+                    (wallet1, tx, prevBalance, newBalance) -> {
+                        log.warn(wallet1.getDescription());
+                        log.warn(tx.getMemo());
+                        log.warn(prevBalance.toFriendlyString());
+                        log.warn(newBalance.toFriendlyString());
+
+                    }
+            );
+
+            peerGroup.startAsync();
+            peerGroup.downloadBlockChain();
+            wallet.saveToFile(iBitcoinNetParam.getStoredWallet(nameId));
+            return new WalletDto().toWalletDto(wallet);
+        }));
+        log.info("test");
+        return result;
+    }
 
 }

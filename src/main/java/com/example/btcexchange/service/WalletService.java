@@ -2,11 +2,10 @@ package com.example.btcexchange.service;
 
 import com.example.btcexchange.ContextStates;
 import com.example.btcexchange.DTO.WalletDto;
-import com.example.btcexchange.utils.IBitcoinNetParam;
+import com.example.btcexchange.interfaces.IBitcoinNetParam;
 import io.vavr.control.Try;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bitcoinj.crypto.MnemonicException;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.wallet.DeterministicSeed;
 import org.bitcoinj.wallet.UnreadableWalletException;
@@ -28,11 +27,11 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class WalletService {
-    private final static File file = new File("storage/temp.wallet");
+    protected static final String walletName = "temp";
     private final IBitcoinNetParam iBitcoinNetParam;
     private final ContextStates netWorkContextStates;
 
-    public Try<List<WalletDto>> getWallets() {
+    public Try<List<WalletDto>> getWallets(String name) {
         return Try.of(this::_extractCredentials);
     }
 
@@ -41,8 +40,8 @@ public class WalletService {
     }
 
 
-    public Wallet _extractWalletFromId(String walletId) throws
-            IOException, ClassNotFoundException, MnemonicException.MnemonicWordException, MnemonicException.MnemonicChecksumException, MnemonicException.MnemonicLengthException, UnreadableWalletException {
+    public Wallet extractWalletFromId(String walletId) throws
+            IOException, ClassNotFoundException, UnreadableWalletException {
 
         Map<String, WalletDto> walletMap = _extractCredentials().stream().collect(Collectors.toMap(WalletDto::getNameId, Function.identity()));
 
@@ -52,8 +51,7 @@ public class WalletService {
 
     }
 
-    protected Wallet convertDtoToWallet(WalletDto toWalletDto) throws MnemonicException.MnemonicLengthException, MnemonicException.MnemonicWordException, MnemonicException.MnemonicChecksumException, UnreadableWalletException {
-//        byte[] entropy = MnemonicCode.INSTANCE.toEntropy(toWalletDto.getPrivateKey());
+    protected Wallet convertDtoToWallet(WalletDto toWalletDto) throws UnreadableWalletException {
         DeterministicSeed deterministicSeed = new DeterministicSeed(StringUtil.join(toWalletDto.getPrivateKey(), " "), null, "", 1409478661L);
         return netWorkContextStates.propagateContext(() ->
                 Wallet.fromSeed(iBitcoinNetParam.btcNetParams(), deterministicSeed, Script.ScriptType.P2WPKH)
@@ -80,7 +78,7 @@ public class WalletService {
         Wallet wallet = netWorkContextStates.propagateContext(() ->
                 Wallet.fromSeed(iBitcoinNetParam.btcNetParams(), deterministicSeed, Script.ScriptType.P2WPKH));
         WalletDto walletDto = new WalletDto(id, wallet.currentReceiveAddress().toString(), deterministicSeed.getMnemonicCode(), passphrase, deterministicSeed.getCreationTimeSeconds());
-        FileOutputStream fileOutput = new FileOutputStream(file);
+        FileOutputStream fileOutput = new FileOutputStream(iBitcoinNetParam.getBlockChainFile());
         ObjectOutputStream outputStream = new ObjectOutputStream(fileOutput);
         walletDtoArrayList.add(walletDto);
         outputStream.writeObject(walletDtoArrayList);
@@ -91,13 +89,11 @@ public class WalletService {
 
     protected ArrayList<WalletDto> _extractCredentials() throws IOException, ClassNotFoundException {
         ArrayList<WalletDto> walletDtoArrayList = new ArrayList<>();
-        if (file.exists()) {
-            FileInputStream fi = new FileInputStream(file);
-            ObjectInputStream oi = new ObjectInputStream(fi);
-            walletDtoArrayList = (ArrayList<WalletDto>) oi.readObject();
-            fi.close();
-            oi.close();
-        }
+        FileInputStream fi = new FileInputStream("storage/temp.wallet");
+        ObjectInputStream oi = new ObjectInputStream(fi);
+        walletDtoArrayList = (ArrayList<WalletDto>) oi.readObject();
+        fi.close();
+        oi.close();
         return walletDtoArrayList;
     }
 
