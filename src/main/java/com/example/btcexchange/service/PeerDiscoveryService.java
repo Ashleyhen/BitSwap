@@ -9,9 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
-import org.bitcoinj.core.listeners.TransactionReceivedInBlockListener;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.net.discovery.MultiplexingDiscovery;
+import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.Wallet;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +62,6 @@ public class PeerDiscoveryService {
         PeerGroup peerGroup = new PeerGroup(iBitcoinNetParam.btcNetParams(), blockChain);
         peerGroup.setUserAgent("bit swap", "1.0");
         walletsList.forEach(peerGroup::addWallet);
-//        walletsList.forEach(blockChain::addWallet);
         MultiplexingDiscovery multiplexingDiscovery = DnsDiscovery.forServices(iBitcoinNetParam.btcNetParams(), VersionMessage.NODE_BLOOM);
         peerGroup.addPeerDiscovery(multiplexingDiscovery);
         peerGroup.addAddress(new PeerAddress(iBitcoinNetParam.btcNetParams(), InetAddress.getByName("127.0.0.1")));
@@ -78,7 +77,6 @@ public class PeerDiscoveryService {
 //        bListener.await();
         log.info(walletsList.stream().map(wallet -> wallet.getBalance().toFriendlyString()).collect(Collectors.joining(", ")));
 
-
         return peerGroup;
     }
 
@@ -87,7 +85,7 @@ public class PeerDiscoveryService {
         Try<WalletDto> result = contextStates.propagateContext(context -> Try.of(() -> {
 //             Blockstore is responsible for saving this data
 
-            SPVBlockStore spvBlockStore = new SPVBlockStore(context, iBitcoinNetParam.getBlockChainFile());
+            BlockStore spvBlockStore = new SPVBlockStore(context, iBitcoinNetParam.getBlockChainFile());
 //            blockchain is responsible for parsing and validating blocks
             BlockChain blockChain = new BlockChain(contextStates.getContext(), wallet, spvBlockStore);
 //            PeerGroup object responsible for actually getting this information from the bitcoin network
@@ -96,20 +94,12 @@ public class PeerDiscoveryService {
             peerGroup.addWallet(wallet);
             blockChain.addWallet(wallet);
             peerGroup.addPeerDiscovery(multiplexingDiscovery);
-            wallet.addCoinsReceivedEventListener(
-                    (wallet1, tx, prevBalance, newBalance) -> {
-                        log.warn(wallet1.getDescription());
-                        log.warn(tx.getMemo());
-                        log.warn(prevBalance.toFriendlyString());
-                        log.warn(newBalance.toFriendlyString());
 
-                    }
-            );
 
             peerGroup.startAsync();
             peerGroup.downloadBlockChain();
             wallet.saveToFile(iBitcoinNetParam.getStoredWallet(nameId));
-            return new WalletDto().toWalletDto(wallet);
+            return new WalletDto(wallet);
         }));
         log.info("test");
         return result;

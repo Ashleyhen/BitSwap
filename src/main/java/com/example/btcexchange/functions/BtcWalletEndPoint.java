@@ -51,7 +51,7 @@ public class BtcWalletEndPoint {
     @Tag(name = swaggerTag)
     public Mono<WalletDto> newWallet(@RequestParam("name-id") String nameId, @RequestParam("passphrase") String passphrase) {
         return Mono.create((sink) -> {
-            Try<WalletDto> walletValidation = walletRecordService.createWallet(nameId, passphrase);
+            Try<WalletDto> walletValidation = fromKit.createWallet(nameId, passphrase).map(walletAppKit -> new WalletDto(walletAppKit.wallet(), nameId, passphrase));
             walletValidation.onSuccess(sink::success).onFailure(sink::error);
         });
     }
@@ -59,14 +59,16 @@ public class BtcWalletEndPoint {
     @GetMapping("import-wallet")
     @Tag(name = swaggerTag)
     public Mono<WalletDto> importWallet(@RequestParam("from-wallet") String walletId, @RequestParam("mnemonic-seed") String mnemonicString, @RequestParam("passphrase") String passphrase) {
-        return walletRecordService.importWallet(walletId, mnemonicString, passphrase).fold(Mono::error, Mono::just);
+        return fromKit.importWallet(walletId, mnemonicString, passphrase)
+                .map(walletAppKit ->
+                        new WalletDto(walletAppKit.wallet()).setNameId(walletId).setPassphrase(passphrase)).fold(Mono::error, Mono::just);
     }
 
     @GetMapping("extract-wallet")
     @Description("currently passphrase isn't required might be required in the future")
     @Tag(name = swaggerTag)
     public Mono<WalletDto> extractWallet(@RequestParam("from-wallet") String walletId, @RequestParam("passphrase") String passphrase) {
-        return walletRecordService.extractWallet(walletId, passphrase).fold(Mono::error, Mono::just);
+        return fromKit.extractWallet(walletId, passphrase).map(walletAppKit -> new WalletDto(walletAppKit.wallet()).setNameId(walletId).setPassphrase(passphrase)).fold(Mono::error, Mono::just);
     }
 
     @GetMapping("download")
@@ -77,10 +79,10 @@ public class BtcWalletEndPoint {
     }
 
     @GetMapping("extract-wallet-from-kit")
-    @Description("just ment to download blockchain")
+    @Description("just meant to download blockchain")
     @Tag(name = swaggerTag)
     public Mono<WalletDto> extractFromKit(@RequestParam("from-wallet") String walletId, @RequestParam("passphrase") String passphrase) {
-        return fromKit.extractWallet(walletId, passphrase).map(walletAppKit -> new WalletDto().toWalletDto(walletAppKit.wallet())).fold(Mono::error, Mono::just);
+        return fromKit.extractWallet(walletId, passphrase).map(walletAppKit -> new WalletDto()).fold(Mono::error, Mono::just);
     }
 
 

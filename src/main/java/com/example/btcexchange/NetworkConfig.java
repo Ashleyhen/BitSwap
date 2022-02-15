@@ -13,6 +13,8 @@ import java.io.File;
 @Primary
 public class NetworkConfig implements IBitcoinNetParam {
 
+    public static final String dir = "testnet";
+
     @Bean
     public AbstractBitcoinNetParams btcNetParams() {
         return TestNet3Params.get();

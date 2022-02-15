@@ -88,7 +88,7 @@ public class WalletService {
     }
 
     protected ArrayList<WalletDto> _extractCredentials() throws IOException, ClassNotFoundException {
-        ArrayList<WalletDto> walletDtoArrayList = new ArrayList<>();
+        ArrayList<WalletDto> walletDtoArrayList;
         FileInputStream fi = new FileInputStream("storage/temp.wallet");
         ObjectInputStream oi = new ObjectInputStream(fi);
         walletDtoArrayList = (ArrayList<WalletDto>) oi.readObject();

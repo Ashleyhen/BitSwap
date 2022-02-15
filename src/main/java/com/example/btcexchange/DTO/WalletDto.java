@@ -18,6 +18,18 @@ public class WalletDto implements Serializable {
     private String passphrase;
     private long creationTime;
 
+    public WalletDto(Wallet wallet, String nameId, String passphrase) {
+        publicKey = wallet.currentReceiveAddress().toString();
+        privateKey = wallet.getKeyChainSeed().getMnemonicCode();
+        this.passphrase = passphrase;
+        this.nameId = nameId;
+    }
+
+    public WalletDto(Wallet wallet) {
+        publicKey = wallet.currentReceiveAddress().toString();
+        privateKey = wallet.getKeyChainSeed().getMnemonicCode();
+    }
+
     public WalletDto setNameId(String nameId) {
         this.nameId = nameId;
         return this;
@@ -25,12 +37,6 @@ public class WalletDto implements Serializable {
 
     public WalletDto setPassphrase(String passphrase) {
         this.passphrase = passphrase;
-        return this;
-    }
-
-    public WalletDto toWalletDto(Wallet wallet) {
-        publicKey = wallet.currentReceiveAddress().toString();
-        privateKey = wallet.getKeyChainSeed().getMnemonicCode();
         return this;
     }
 

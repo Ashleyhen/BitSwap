@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.security.SecureRandom;
-import java.text.SimpleDateFormat;
 import java.util.List;
 
 @Component
@@ -53,7 +52,7 @@ public class WalletStorageService implements IImportExportWallet<Wallet> {
     public Try<Wallet> createWallet(String walletName, String passphrase) {
         DeterministicSeed deterministicSeed = new DeterministicSeed(new SecureRandom(), DeterministicSeed.MAX_SEED_ENTROPY_BITS, passphrase);
         Wallet wallet = netWorkContextStates.propagateContext((context) ->
-                Wallet.fromSeed(context, deterministicSeed, Script.ScriptType.P2WSH ));
+                Wallet.fromSeed(context, deterministicSeed, Script.ScriptType.P2WPKH));
         CheckedFunction0<Wallet> checkedFunction0 = () -> {
             File file = iBitcoinNetParam.getStoredWallet(walletName);
             if (!file.exists()) {
