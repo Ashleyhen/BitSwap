@@ -31,9 +31,6 @@ public class BtcWalletEndPoint {
     @Qualifier("kit")
     private final IImportExportWallet<WalletAppKit> fromKit;
 
-    @Qualifier("impl")
-    private final IImportExportWallet<WalletDto> walletRecordService;
-
     private final PeerDiscoveryService peerDiscoveryService;
     private final IImportExportWallet<Wallet> walletService;
 

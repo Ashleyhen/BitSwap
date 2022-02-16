@@ -64,4 +64,9 @@ public class WalletStorageService implements IImportExportWallet<Wallet> {
         return Try.of(checkedFunction0);
     }
 
+    @Override
+    public String terminate() {
+        return null;
+    }
+
 }

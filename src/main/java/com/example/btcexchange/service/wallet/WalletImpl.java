@@ -24,4 +24,9 @@ public class WalletImpl implements IImportExportWallet<WalletDto> {
     public Try<WalletDto> createWallet(String walletName, String passphrase) {
         return walletStorageService.createWallet(walletName, passphrase).map(wallet -> new WalletDto(wallet).setNameId(walletName).setPassphrase(passphrase));
     }
+
+    @Override
+    public String terminate() {
+        return null;
+    }
 }

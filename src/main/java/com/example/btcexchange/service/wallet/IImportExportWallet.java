@@ -8,4 +8,6 @@ public interface IImportExportWallet<T> {
     Try<T> importWallet(String walletName, String mnemonicString, String passphrase);
 
     Try<T> createWallet(String walletName, String passphrase);
+
+    String terminate();
 }
