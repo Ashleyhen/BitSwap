@@ -16,6 +16,7 @@ public class WalletDto implements Serializable {
     private String publicKey;
     private List<String> privateKey;
     private String passphrase;
+    private String currentBalance;
     private long creationTime;
 
     public WalletDto(Wallet wallet, String nameId, String passphrase) {
@@ -28,6 +29,7 @@ public class WalletDto implements Serializable {
     public WalletDto(Wallet wallet) {
         publicKey = wallet.currentReceiveAddress().toString();
         privateKey = wallet.getKeyChainSeed().getMnemonicCode();
+        currentBalance = wallet.getBalance().toFriendlyString();
     }
 
     public WalletDto setNameId(String nameId) {

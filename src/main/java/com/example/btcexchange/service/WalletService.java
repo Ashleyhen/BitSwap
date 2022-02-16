@@ -77,7 +77,7 @@ public class WalletService {
         DeterministicSeed deterministicSeed = new DeterministicSeed(new SecureRandom(), DeterministicSeed.MAX_SEED_ENTROPY_BITS, passphrase);
         Wallet wallet = netWorkContextStates.propagateContext(() ->
                 Wallet.fromSeed(iBitcoinNetParam.btcNetParams(), deterministicSeed, Script.ScriptType.P2WPKH));
-        WalletDto walletDto = new WalletDto(id, wallet.currentReceiveAddress().toString(), deterministicSeed.getMnemonicCode(), passphrase, deterministicSeed.getCreationTimeSeconds());
+        WalletDto walletDto = new WalletDto(id, wallet.currentReceiveAddress().toString(), deterministicSeed.getMnemonicCode(), passphrase, wallet.getBalance().toFriendlyString(), deterministicSeed.getCreationTimeSeconds());
         FileOutputStream fileOutput = new FileOutputStream(iBitcoinNetParam.getBlockChainFile());
         ObjectOutputStream outputStream = new ObjectOutputStream(fileOutput);
         walletDtoArrayList.add(walletDto);

@@ -55,10 +55,16 @@ public class WalletKitService implements IImportExportWallet<WalletAppKit> {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-mm-dd", Locale.ENGLISH);
 //        P2PKH
         return Try.of(() -> {
-            Date date = simpleDateFormat.parse("2022-01-15");
+            Date date = simpleDateFormat.parse("2022-02-14");
+
             walletAppKit = contextStates.propagateContext(context ->
                     new WalletAppKit(context, Script.ScriptType.P2WPKH, KeyChainGroupStructure.DEFAULT, new File(NetworkConfig.dir), walletName)
                             .restoreWalletFromSeed(new DeterministicSeed(mnemonicPhrase, null, passphrase, date.getTime())));
+            walletAppKit.setWalletFactory((networkParameters, keyChainGroup) -> {
+                Wallet wallet = new Wallet(networkParameters, keyChainGroup);
+                wallet.addWatchedAddress(wallet.currentAddress(KeyChain.KeyPurpose.RECEIVE_FUNDS));
+                return wallet;
+            });
             walletAppKit.startAsync();
             walletAppKit.awaitRunning();
             walletAppKit.store();
