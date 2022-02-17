@@ -1,8 +1,7 @@
 package com.example.btcexchange.functions;
 
 import com.example.btcexchange.DTO.WalletDto;
-import com.example.btcexchange.service.PeerDiscoveryService;
-import com.example.btcexchange.service.wallet.IImportExportWallet;
+import com.example.btcexchange.interfaces.IImportExportWallet;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,10 +10,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.vavr.control.Try;
 import lombok.RequiredArgsConstructor;
 import org.bitcoinj.kits.WalletAppKit;
-import org.bitcoinj.wallet.Wallet;
 import org.springdoc.core.annotations.RouterOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,20 +24,17 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @RestController
 public class BtcWalletEndPoint {
-    final static String swaggerTag = "exchange";
-    @Qualifier("kit")
+    private final static String swaggerTag = "wallet";
     private final IImportExportWallet<WalletAppKit> fromKit;
 
-    private final PeerDiscoveryService peerDiscoveryService;
-    private final IImportExportWallet<Wallet> walletService;
 
     @Bean
-    @RouterOperation(operation = @Operation(description = "returns of a list of all the current test wallets", operationId = "testEndPoint", tags = "testing-endpoints", responses = @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = WalletDto.class))))
-
+    @RouterOperation(
+            operation = @Operation(description = "returns of a list of all the current test wallets", operationId = "terminate wallet", tags = "testing-endpoints"
+                    , responses = @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = WalletDto.class))))
     )
     public Supplier<String> getAllWallets() {
-
-        return () -> "hello";
+        return () -> "ok";
     }
 
 
@@ -68,19 +62,11 @@ public class BtcWalletEndPoint {
         return fromKit.extractWallet(walletId, passphrase).map(walletAppKit -> new WalletDto(walletAppKit.wallet()).setNameId(walletId).setPassphrase(passphrase)).fold(Mono::error, Mono::just);
     }
 
-    @GetMapping("download")
-    @Description("just ment to download blockchain")
+    @GetMapping("terminate")
+    @Description("terminates wallet connection")
     @Tag(name = swaggerTag)
-    public Mono<WalletDto> download(@RequestParam("from-wallet") String walletId, @RequestParam("passphrase") String passphrase) {
-        return walletService.extractWallet(walletId, passphrase).flatMap(wallet -> peerDiscoveryService.addTrackAddress(walletId, wallet)).fold(Mono::error, Mono::just);
+    public Supplier<String> terminate(@RequestParam("from-wallet") String walletId, @RequestParam("passphrase") String passphrase) {
+        fromKit.terminate();
+        return () -> "ok";
     }
-
-    @GetMapping("extract-wallet-from-kit")
-    @Description("just meant to download blockchain")
-    @Tag(name = swaggerTag)
-    public Mono<WalletDto> extractFromKit(@RequestParam("from-wallet") String walletId, @RequestParam("passphrase") String passphrase) {
-        return fromKit.extractWallet(walletId, passphrase).map(walletAppKit -> new WalletDto()).fold(Mono::error, Mono::just);
-    }
-
-
 }

@@ -1,40 +1,30 @@
 package com.example.btcexchange;
 
-import com.example.btcexchange.interfaces.IBitcoinNetParam;
 import org.bitcoinj.core.Context;
 import org.bitcoinj.params.AbstractBitcoinNetParams;
+import org.bitcoinj.params.TestNet3Params;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 @Configuration
 public class ContextStates {
 
+    public static final String dir = "testnet";
     private static volatile Context context;
-    private final IBitcoinNetParam iBitcoinNetParam;
+    private final TestNet3Params testNet3Params = new TestNet3Params();
 
 
     @Autowired
-    public ContextStates(IBitcoinNetParam iBitcoinNetParam) {
-        this.iBitcoinNetParam = iBitcoinNetParam;
-        context = new Context(iBitcoinNetParam.btcNetParams());
+    public ContextStates() {
+        context = new Context(testNet3Params);
         Context.propagate(context);
-    }
-
-    public Context getContext() {
-        return context;
-    }
-
-    public <T> T propagateContext(Supplier<T> prop) {
-        Context.propagate(context);
-        return prop.get();
     }
 
     public <T> T propagateContext(Function<AbstractBitcoinNetParams, T> prop) {
         Context.propagate(context);
-        return prop.apply(iBitcoinNetParam.btcNetParams());
+        return prop.apply(testNet3Params);
     }
 
 }

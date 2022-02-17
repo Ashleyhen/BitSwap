@@ -1,9 +1,7 @@
 package com.example.btcexchange.service;
 
 import com.example.btcexchange.ContextStates;
-import com.example.btcexchange.NetworkConfig;
-import com.example.btcexchange.interfaces.IBitcoinNetParam;
-import com.example.btcexchange.service.wallet.IImportExportWallet;
+import com.example.btcexchange.interfaces.IImportExportWallet;
 import io.vavr.control.Try;
 import lombok.RequiredArgsConstructor;
 import org.bitcoinj.kits.WalletAppKit;
@@ -13,6 +11,7 @@ import org.bitcoinj.wallet.KeyChain;
 import org.bitcoinj.wallet.KeyChainGroupStructure;
 import org.bitcoinj.wallet.Wallet;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -22,14 +21,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-@Component("kit")
+@Component
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@Primary
 public class WalletKitService implements IImportExportWallet<WalletAppKit> {
 
     private volatile static WalletAppKit walletAppKit;
-    private final NetworkConfig networkConfig;
     private final ContextStates contextStates;
-    private final IBitcoinNetParam iBitcoinNetParam;
+
+    public static WalletAppKit getWalletAppKit() {
+        return walletAppKit;
+    }
 
     @Override
     public Try<WalletAppKit> extractWallet(String walletName, String passphrase) {
@@ -37,7 +39,7 @@ public class WalletKitService implements IImportExportWallet<WalletAppKit> {
             return Try.of(() -> walletAppKit);
         }
         walletAppKit = contextStates.propagateContext(context ->
-                new WalletAppKit(context, Script.ScriptType.P2WPKH, KeyChainGroupStructure.DEFAULT, new File(NetworkConfig.dir), walletName)
+                new WalletAppKit(context, Script.ScriptType.P2WPKH, KeyChainGroupStructure.DEFAULT, new File(ContextStates.dir), walletName)
         );
         if (!walletAppKit.isRunning()) {
             walletAppKit.startAsync();
@@ -58,7 +60,7 @@ public class WalletKitService implements IImportExportWallet<WalletAppKit> {
             Date date = simpleDateFormat.parse("2022-02-14");
 
             walletAppKit = contextStates.propagateContext(context ->
-                    new WalletAppKit(context, Script.ScriptType.P2WPKH, KeyChainGroupStructure.DEFAULT, new File(NetworkConfig.dir), walletName)
+                    new WalletAppKit(context, Script.ScriptType.P2WPKH, KeyChainGroupStructure.DEFAULT, new File(ContextStates.dir), walletName)
                             .restoreWalletFromSeed(new DeterministicSeed(mnemonicPhrase, null, passphrase, date.getTime())));
             walletAppKit.setWalletFactory((networkParameters, keyChainGroup) -> {
                 Wallet wallet = new Wallet(networkParameters, keyChainGroup);
@@ -76,9 +78,8 @@ public class WalletKitService implements IImportExportWallet<WalletAppKit> {
     @Override
     public Try<WalletAppKit> createWallet(String walletName, String passphrase) {
         DeterministicSeed deterministicSeed = new DeterministicSeed(new SecureRandom(), DeterministicSeed.MAX_SEED_ENTROPY_BITS, passphrase);
-
         walletAppKit = contextStates.propagateContext(context ->
-                new WalletAppKit(context, Script.ScriptType.P2WPKH, KeyChainGroupStructure.DEFAULT, new File(NetworkConfig.dir), walletName)
+                new WalletAppKit(context, Script.ScriptType.P2WPKH, KeyChainGroupStructure.DEFAULT, new File(ContextStates.dir), walletName)
         ).restoreWalletFromSeed(deterministicSeed);
         walletAppKit.startAsync();
         walletAppKit.awaitRunning();
@@ -86,9 +87,8 @@ public class WalletKitService implements IImportExportWallet<WalletAppKit> {
     }
 
     @Override
-    public String terminate() {
+    public void terminate() {
         walletAppKit.store();
         walletAppKit.stopAsync();
-        return "terminated";
     }
 }

@@ -17,7 +17,6 @@ public class WalletDto implements Serializable {
     private List<String> privateKey;
     private String passphrase;
     private String currentBalance;
-    private long creationTime;
 
     public WalletDto(Wallet wallet, String nameId, String passphrase) {
         publicKey = wallet.currentReceiveAddress().toString();
