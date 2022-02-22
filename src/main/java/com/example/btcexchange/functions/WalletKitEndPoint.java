@@ -1,7 +1,7 @@
 package com.example.btcexchange.functions;
 
 import com.example.btcexchange.DTO.WalletDto;
-import com.example.btcexchange.interfaces.IImportExportWallet;
+import com.example.btcexchange.service.wallet.IImportExportWallet;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @RestController
-public class BtcWalletEndPoint {
+public class WalletKitEndPoint {
     private final static String swaggerTag = "wallet";
     private final IImportExportWallet<WalletAppKit> fromKit;
 
@@ -65,8 +65,9 @@ public class BtcWalletEndPoint {
     @GetMapping("terminate")
     @Description("terminates wallet connection")
     @Tag(name = swaggerTag)
-    public Supplier<String> terminate(@RequestParam("from-wallet") String walletId, @RequestParam("passphrase") String passphrase) {
+    public Supplier<String> terminate() {
         fromKit.terminate();
         return () -> "ok";
     }
+//    tb1q0tg9kzfufnjv8kqmp2j8waxtf602gq9msfz40p
 }

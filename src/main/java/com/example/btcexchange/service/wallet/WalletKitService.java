@@ -1,7 +1,6 @@
-package com.example.btcexchange.service;
+package com.example.btcexchange.service.wallet;
 
-import com.example.btcexchange.ContextStates;
-import com.example.btcexchange.interfaces.IImportExportWallet;
+import com.example.btcexchange.state.ContextStates;
 import io.vavr.control.Try;
 import lombok.RequiredArgsConstructor;
 import org.bitcoinj.kits.WalletAppKit;

@@ -1,4 +1,4 @@
-package com.example.btcexchange.interfaces;
+package com.example.btcexchange.service.wallet;
 
 import io.vavr.control.Try;
 
@@ -11,4 +11,5 @@ public interface IImportExportWallet<T> {
     Try<T> createWallet(String walletName, String passphrase);
 
     void terminate();
+
 }

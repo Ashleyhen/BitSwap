@@ -1,4 +1,4 @@
-package com.example.btcexchange;
+package com.example.btcexchange.state;
 
 import org.bitcoinj.core.Context;
 import org.bitcoinj.params.AbstractBitcoinNetParams;
