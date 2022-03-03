@@ -3,6 +3,7 @@ package com.example.btcexchange.service.wallet;
 import com.example.btcexchange.state.ContextStates;
 import io.vavr.control.Try;
 import lombok.RequiredArgsConstructor;
+import org.bitcoin.NativeSecp256k1;
 import org.bitcoinj.kits.WalletAppKit;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.wallet.DeterministicSeed;
@@ -57,7 +58,6 @@ public class WalletKitService implements IImportExportWallet<WalletAppKit> {
 //        P2PKH
         return Try.of(() -> {
             Date date = simpleDateFormat.parse("2022-02-14");
-
             walletAppKit = contextStates.propagateContext(context ->
                     new WalletAppKit(context, Script.ScriptType.P2WPKH, KeyChainGroupStructure.DEFAULT, new File(ContextStates.dir), walletName)
                             .restoreWalletFromSeed(new DeterministicSeed(mnemonicPhrase, null, passphrase, date.getTime())));

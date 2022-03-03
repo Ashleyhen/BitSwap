@@ -1,4 +1,4 @@
-package com.example.btcexchange.service.transfer;
+package com.example.btcexchange.service;
 
 import com.example.btcexchange.service.wallet.WalletKitService;
 import com.example.btcexchange.state.ContextStates;
@@ -29,7 +29,6 @@ public class TransferService {
         return Try.of(() -> {
             SendRequest req = SendRequest.to(address, Coin.ofSat(sats));
             req.setFeePerVkb(Transaction.DEFAULT_TX_FEE);
-
             req.changeAddress = drain ? address : wallet.currentChangeAddress();
             req.memo = "hello world";
             Wallet.SendResult result = wallet.sendCoins(walletAppKit.peerGroup(), req);

@@ -1,6 +1,6 @@
 package com.example.btcexchange.functions;
 
-import com.example.btcexchange.service.transfer.TransferService;
+import com.example.btcexchange.service.TransferService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;

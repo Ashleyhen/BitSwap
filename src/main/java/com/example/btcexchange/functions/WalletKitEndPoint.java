@@ -1,6 +1,7 @@
 package com.example.btcexchange.functions;
 
 import com.example.btcexchange.DTO.WalletDto;
+import com.example.btcexchange.service.AdapterSignatureService;
 import com.example.btcexchange.service.wallet.IImportExportWallet;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,6 +27,7 @@ import java.util.function.Supplier;
 public class WalletKitEndPoint {
     private final static String swaggerTag = "wallet";
     private final IImportExportWallet<WalletAppKit> fromKit;
+    private final AdapterSignatureService adapterSignatureService;
 
 
     @Bean
@@ -34,6 +36,7 @@ public class WalletKitEndPoint {
                     , responses = @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = WalletDto.class))))
     )
     public Supplier<String> getAllWallets() {
+        adapterSignatureService.preSign();
         return () -> "ok";
     }
 
