@@ -9,8 +9,11 @@ import org.bitcoinj.core.Address;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.Transaction;
 import org.bitcoinj.kits.WalletAppKit;
+import org.bitcoinj.net.discovery.DnsDiscovery;
+import org.bitcoinj.net.discovery.SeedPeers;
 import org.bitcoinj.wallet.SendRequest;
 import org.bitcoinj.wallet.Wallet;
+import org.bouncycastle.crypto.engines.SEEDEngine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,8 +30,9 @@ public class TransferService {
         Wallet wallet = walletAppKit.wallet();
 
         return Try.of(() -> {
+
             SendRequest req = SendRequest.to(address, Coin.ofSat(sats));
-            req.setFeePerVkb(Transaction.DEFAULT_TX_FEE);
+            req.setFeePerVkb(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE);
             req.changeAddress = drain ? address : wallet.currentChangeAddress();
             req.memo = "hello world";
             Wallet.SendResult result = wallet.sendCoins(walletAppKit.peerGroup(), req);
@@ -41,3 +45,5 @@ public class TransferService {
 
     }
 }
+//private key
+//1d454c6ab705f999d97e6465300a79a9595fb5ae1186ae20e33e12bea606c094
